@@ -34,6 +34,8 @@ type Computer interface {
 }
 
 // +++ Инициализация фабричного метода
+// При возникновении нового типа электроники, достаточно добавить
+// инициализацию, в соответствии с интерфейсом.
 func New(typeName string) Computer {
 	switch typeName {
 	default:
