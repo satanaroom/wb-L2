@@ -1,6 +1,4 @@
-package main
-
-import "fmt"
+package pattern
 
 /*
 	Реализовать паттерн «состояние».
@@ -64,6 +62,7 @@ func (a *MobileAlertSong) Alert() string {
 
 // ---
 
+/*
 func main() {
 	expect := "Vrrr... Brrr... Vrrr..." +
 		"Vrrr... Brrr... Vrrr..." +
@@ -82,3 +81,4 @@ func main() {
 		fmt.Printf("Expect result to equal %s, but %s.\n", expect, result)
 	}
 }
+*/
