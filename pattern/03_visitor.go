@@ -1,7 +1,5 @@
 package pattern
 
-import "fmt"
-
 /*
 	Реализовать паттерн «посетитель».
 Объяснить применимость паттерна, его плюсы и минусы, а также реальные примеры использования данного примера на практике.
@@ -115,6 +113,7 @@ func (b *BurgerBar) BuyBurger() string {
 
 // ---
 
+/*
 func main() {
 	expect := "Buy sushi...Buy pizza...Buy burger..."
 
@@ -130,3 +129,4 @@ func main() {
 		fmt.Printf("Expect result to equal %s, but %s.\n", expect, result)
 	}
 }
+*/
