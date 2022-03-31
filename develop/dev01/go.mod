@@ -1,4 +1,4 @@
-module github.com/satanaroom/wb-L2
+module github.com/satanaroom/wb-L2/time
 
 go 1.18
 

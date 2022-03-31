@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/beevik/ntp"
 )
@@ -19,11 +20,22 @@ import (
 */
 
 func main() {
-	time, err := ntp.Time("0.beevik-ntp.pool.ntp.org")
+	// Для получения текущего времени, а также некоторых дополнительных
+	// метаданных, используется функция запроса.
+	response, err := ntp.Query("0.beevik-ntp.pool.ntp.org")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
+		fmt.Fprint(os.Stderr, err.Error())
 		os.Exit(1)
-		return
 	}
-	fmt.Println(time)
+	// Response выполняет дополнительные проверки работоспособности,
+	// чтобы определить, подходит ли ответ для целей синхронизации времени.
+	err = response.Validate()
+	if err != nil {
+		fmt.Fprint(os.Stderr, err.Error())
+	}
+	// ClockOffset - предполагаемое смещение локальных системных часов относительно часов сервера.
+	// Используется для более точного считывания времени.
+	time := time.Now().Add(response.ClockOffset)
+	fmt.Printf("%s", time)
+	os.Exit(0)
 }
