@@ -1,0 +1,8 @@
+data
+computer
+laptop
+LAPTOP
+mouse
+RedHat
+debian
+laptop
