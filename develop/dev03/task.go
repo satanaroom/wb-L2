@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -47,10 +48,17 @@ const (
 	hFlag                = "-h"
 )
 
+func CreateLines(content []byte) []string {
+	str := string(content)
+	lines := strings.Split(str, "\n")
+	lines = lines[:len(lines)-1]
+	return lines
+}
+
 // +++ Функции обработки флагов
 func parseFlag(flag string) bool {
 	runes := []rune(flag)
-	if len(runes) == 2 {
+	if len(runes) >= 2 {
 		if runes[0] == '-' {
 			symb := runes[1]
 			if symb == 'k' || symb == 'n' || symb == 'r' || symb == 'u' ||
@@ -75,53 +83,147 @@ func parseFlag(flag string) bool {
 func chooseAFlag(flag string, content []byte) {
 	switch flag {
 	case kFlag:
-		parseK(content)
+		sortK(content)
 	case nFlag:
-		parseN(content)
+		sortN(content)
 	case rFlag:
-		parseR(content)
+		sortR(content)
 	case uFlag:
-		parseU(content)
+		sortU(content)
 	case MFlag:
-		parseM(content)
+		sortM(content)
 	case bFlag:
-		parseB(content)
+		sortB(content)
 	case cFlag:
-		parseC(content)
+		sortC(content)
 	case hFlag:
-		parseH(content)
+		sortH(content)
 	}
 }
 
-func parseK(content []byte) {
+// +++ Сортировка по колонке
+type KSort [][]string
+
+var ColumnIndex int
+
+func (data KSort) Less(i, j int) bool {
+	columnIndex := ColumnIndex
+	word1 := data[i][columnIndex]
+	word2 := data[j][columnIndex]
+
+	return word1 < word2
+}
+
+func (data KSort) Len() int {
+	return len(data)
+}
+func (data KSort) Swap(i, j int) {
+	data[i], data[j] = data[j], data[i]
+}
+
+func sortK(content []byte) {
+	var lines [][]string
+	parts := CreateLines(content)
+	for _, val := range parts {
+		lines = append(lines, strings.Split(val, " "))
+	}
+	sort.Sort(KSort(lines))
+	for _, val := range lines {
+		fmt.Println(strings.Join(val, " "))
+	}
+}
+
+// ---
+
+// +++ Сотрировка по числовому значению
+type NSort [][]string
+
+func (data NSort) Less(i, j int) bool {
+	columnIndex := ColumnIndex
+	num1 := data[i][columnIndex]
+	num2 := data[j][columnIndex]
+	convNum1, err := strconv.Atoi(num1)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+		os.Exit(1)
+	}
+	convNum2, err := strconv.Atoi(num2)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+		os.Exit(1)
+	}
+
+	return convNum1 < convNum2
+}
+
+func (data NSort) Len() int {
+	return len(data)
+}
+func (data NSort) Swap(i, j int) {
+	data[i], data[j] = data[j], data[i]
+}
+func sortN(content []byte) {
+	var lines [][]string
+	parts := CreateLines(content)
+	for _, val := range parts {
+		lines = append(lines, strings.Split(val, " "))
+	}
+	sort.Sort(NSort(lines))
+	for _, val := range lines {
+		fmt.Println(strings.Join(val, " "))
+	}
+}
+
+// ---
+
+// +++ Сотрировка в обратном порядке
+func sortR(content []byte) {
+	lines := CreateLines(content)
+	sort.Sort(sort.Reverse(sort.StringSlice(lines)))
+	for _, val := range lines {
+		fmt.Println(val)
+	}
+}
+
+// ---
+
+func RemoveDuplicates(str []string) []string {
+	// Объявление результируещего множества
+	var unique []string
+	// Создание мапы для определения уникальности значений в результирующем множестве
+	attend := make(map[string]bool)
+	for _, val := range str {
+		// Если в мапе нет элемента, добавляем
+		if !attend[val] {
+			unique = append(unique, val)
+			// Устанавливаем ключ уникальности
+			attend[val] = true
+		}
+	}
+	return unique
+}
+
+func sortU(content []byte) {
+	lines := CreateLines(content)
+	lines = RemoveDuplicates(lines)
+	for _, val := range lines {
+		fmt.Println(val)
+	}
+}
+
+func sortM(content []byte) {
 	fmt.Println(content)
 }
 
-func parseN(content []byte) {
+func sortB(content []byte) {
 	fmt.Println(content)
 }
 
-func parseR(content []byte) {
+func sortC(content []byte) {
 	fmt.Println(content)
 }
 
-func parseU(content []byte) {
-	fmt.Println(content)
-}
-
-func parseM(content []byte) {
-	fmt.Println(content)
-}
-
-func parseB(content []byte) {
-	fmt.Println(content)
-}
-
-func parseC(content []byte) {
-	fmt.Println(content)
-}
-
-func parseH(content []byte) {
+func sortH(content []byte) {
 	fmt.Println(content)
 }
 
@@ -129,9 +231,7 @@ func parseH(content []byte) {
 
 // ++= Функции обработки без флагов
 func parseNoFlags(content []byte) {
-	str := string(content)
-	words := strings.Split(str, "\n")
-	words = words[:len(words)-1]
+	words := CreateLines(content)
 	sort.Strings(words)
 	for _, val := range words {
 		fmt.Println(val)
@@ -158,8 +258,8 @@ func main() {
 		}
 		parseNoFlags(content)
 	} else if len(os.Args) == 3 {
-		flag := os.Args[1]
-		ok := parseFlag(flag)
+		flags := os.Args[1]
+		ok := parseFlag(flags)
 		if !ok {
 			os.Exit(1)
 		}
@@ -169,7 +269,21 @@ func main() {
 			fmt.Fprintf(os.Stderr, "%s\n", err.Error())
 			os.Exit(1)
 		}
-		chooseAFlag(flag, content)
+		indicator := flags[:2]
+		number := flags[2:]
+		if number != "" {
+			num, err := strconv.Atoi(number)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+				os.Exit(1)
+			}
+			if num == 0 {
+				fmt.Fprintf(os.Stderr, "%s\n", "number of column should not zero")
+				os.Exit(1)
+			}
+			ColumnIndex = num
+		}
+		chooseAFlag(indicator, content)
 	}
 	os.Exit(0)
 }
