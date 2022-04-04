@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 /*
@@ -38,14 +39,23 @@ const (
 	argumentErrorNoFlags = "error argument occurred: please, use: go run task.go fileName"
 	argumentError        = "error argument occurred: please, use: go run task.go -flag fileName"
 	flagError            = "error flag occurred"
-	kFlag                = "-k"
-	nFlag                = "-n"
-	rFlag                = "-r"
-	uFlag                = "-u"
-	MFlag                = "-M"
-	bFlag                = "-b"
-	cFlag                = "-c"
-	hFlag                = "-h"
+	infoMessage          = `the following flags are supported:
+	-k — указание колонки для сортировки
+	-n — сортировать по числовому значению
+	-r — сортировать в обратном порядке
+	-u — не выводить повторяющиеся строки
+	-M — сортировать по названию месяца
+	-b — игнорировать хвостовые пробелы
+	-c — проверять отсортированы ли данные
+	-h — сортировать по числовому значению с учётом суффиксов`
+	kFlag = "k"
+	nFlag = "n"
+	rFlag = "r"
+	uFlag = "u"
+	MFlag = "M"
+	bFlag = "b"
+	cFlag = "c"
+	hFlag = "h"
 )
 
 func CreateLines(content []byte) []string {
@@ -56,49 +66,42 @@ func CreateLines(content []byte) []string {
 }
 
 // +++ Функции обработки флагов
-func parseFlag(flag string) bool {
-	runes := []rune(flag)
+func parseFlag(flags string) bool {
+	runes := []rune(flags)
 	if len(runes) >= 2 {
 		if runes[0] == '-' {
-			symb := runes[1]
-			if symb == 'k' || symb == 'n' || symb == 'r' || symb == 'u' ||
-				symb == 'M' || symb == 'b' || symb == 'c' || symb == 'h' {
-				return true
+			for i := 1; i < len(runes); i++ {
+				symb := runes[i]
+				if symb != 'k' && symb != 'n' && symb != 'r' && symb != 'u' &&
+					symb != 'M' && symb != 'b' && symb != 'c' && symb != 'h' &&
+					!unicode.IsDigit(symb) {
+					fmt.Fprintln(os.Stderr, flagError)
+					fmt.Println(infoMessage)
+					return false
+				}
 			}
+			return true
 		}
 	}
 	fmt.Fprintln(os.Stderr, flagError)
-	fmt.Println(`the following flags are supported:
-	-k — указание колонки для сортировки
-	-n — сортировать по числовому значению
-	-r — сортировать в обратном порядке
-	-u — не выводить повторяющиеся строки
-	-M — сортировать по названию месяца
-	-b — игнорировать хвостовые пробелы
-	-c — проверять отсортированы ли данные
-	-h — сортировать по числовому значению с учётом суффиксов`)
+	fmt.Println(infoMessage)
 	return false
 }
 
-func chooseAFlag(flag string, content []byte) {
-	switch flag {
-	case kFlag:
-		sortK(content)
-	case nFlag:
-		sortN(content)
-	case rFlag:
-		sortR(content)
-	case uFlag:
-		sortU(content)
-	case MFlag:
-		sortM(content)
-	case bFlag:
-		sortB(content)
-	case cFlag:
-		sortC(content)
-	case hFlag:
-		sortH(content)
+func chooseAFlag(flag string, lines []string) []string {
+	if flag == kFlag {
+		lines = sortK(lines)
 	}
+	if flag == nFlag {
+		lines = sortN(lines)
+	}
+	if flag == rFlag {
+		lines = sortR(lines)
+	}
+	if flag == uFlag {
+		lines = sortU(lines)
+	}
+	return lines
 }
 
 // +++ Сортировка по колонке
@@ -121,16 +124,17 @@ func (data KSort) Swap(i, j int) {
 	data[i], data[j] = data[j], data[i]
 }
 
-func sortK(content []byte) {
-	var lines [][]string
-	parts := CreateLines(content)
-	for _, val := range parts {
-		lines = append(lines, strings.Split(val, " "))
-	}
-	sort.Sort(KSort(lines))
+func sortK(lines []string) []string {
+	var sliceLines [][]string
+	var result []string
 	for _, val := range lines {
-		fmt.Println(strings.Join(val, " "))
+		sliceLines = append(sliceLines, strings.Split(val, " "))
 	}
+	sort.Sort(KSort(sliceLines))
+	for _, val := range sliceLines {
+		result = append(result, strings.Join(val, " "))
+	}
+	return result
 }
 
 // ---
@@ -162,27 +166,25 @@ func (data NSort) Len() int {
 func (data NSort) Swap(i, j int) {
 	data[i], data[j] = data[j], data[i]
 }
-func sortN(content []byte) {
-	var lines [][]string
-	parts := CreateLines(content)
-	for _, val := range parts {
-		lines = append(lines, strings.Split(val, " "))
-	}
-	sort.Sort(NSort(lines))
+func sortN(lines []string) []string {
+	var sliceLines [][]string
+	var result []string
 	for _, val := range lines {
-		fmt.Println(strings.Join(val, " "))
+		sliceLines = append(sliceLines, strings.Split(val, " "))
 	}
+	sort.Sort(NSort(sliceLines))
+	for _, val := range sliceLines {
+		result = append(result, strings.Join(val, " "))
+	}
+	return result
 }
 
 // ---
 
 // +++ Сотрировка в обратном порядке
-func sortR(content []byte) {
-	lines := CreateLines(content)
+func sortR(lines []string) []string {
 	sort.Sort(sort.Reverse(sort.StringSlice(lines)))
-	for _, val := range lines {
-		fmt.Println(val)
-	}
+	return lines
 }
 
 // ---
@@ -203,12 +205,9 @@ func RemoveDuplicates(str []string) []string {
 	return unique
 }
 
-func sortU(content []byte) {
-	lines := CreateLines(content)
+func sortU(lines []string) []string {
 	lines = RemoveDuplicates(lines)
-	for _, val := range lines {
-		fmt.Println(val)
-	}
+	return lines
 }
 
 func sortM(content []byte) {
@@ -258,6 +257,8 @@ func main() {
 		}
 		parseNoFlags(content)
 	} else if len(os.Args) == 3 {
+		// var result []string
+		var flagsLine []rune
 		flags := os.Args[1]
 		ok := parseFlag(flags)
 		if !ok {
@@ -269,21 +270,34 @@ func main() {
 			fmt.Fprintf(os.Stderr, "%s\n", err.Error())
 			os.Exit(1)
 		}
-		indicator := flags[:2]
-		number := flags[2:]
-		if number != "" {
-			num, err := strconv.Atoi(number)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "%s\n", err.Error())
-				os.Exit(1)
+		flagsLine = []rune(flags)
+		for _, val := range flagsLine {
+			if val >= 48 && val <= 57 {
+				number, err := strconv.Atoi(string(val))
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+					os.Exit(1)
+				}
+				if number == 0 {
+					fmt.Fprintf(os.Stderr, "%s\n", "number of column should not zero")
+					os.Exit(1)
+				}
+				ColumnIndex = number
 			}
-			if num == 0 {
-				fmt.Fprintf(os.Stderr, "%s\n", "number of column should not zero")
-				os.Exit(1)
-			}
-			ColumnIndex = num
 		}
-		chooseAFlag(indicator, content)
+		flagsLine = flagsLine[1:]
+		lines := CreateLines(content)
+		for _, val := range flagsLine {
+			if val == 'k' || val == 'n' || val == 'r' || val == 'u' ||
+				val == 'M' || val == 'b' || val == 'c' || val == 'h' {
+				lines = chooseAFlag(string(val), lines)
+			}
+		}
+		for _, val := range lines {
+			fmt.Println(val)
+		}
 	}
+	s := []byte("hello")
+	fmt.Println(s)
 	os.Exit(0)
 }
