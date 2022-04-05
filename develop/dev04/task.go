@@ -1,5 +1,11 @@
 package main
 
+import (
+	"sort"
+	"strings"
+	"unicode/utf8"
+)
+
 /*
 === Поиск анаграмм по словарю ===
 
@@ -19,6 +25,58 @@ package main
 Программа должна проходить все тесты. Код должен проходить проверки go vet и golint.
 */
 
-func main() {
+func SearchAnagram(arr []string) map[string][]string {
+	m := make(map[string][]string)
 
+	for _, item := range arr {
+		var anagrams []string
+		item = strings.ToLower(strings.Trim(item, " "))
+
+		for _, val := range arr {
+			val = strings.ToLower(strings.Trim(val, " "))
+
+			if utf8.RuneCountInString(item) == utf8.RuneCountInString(val) {
+				hash := make(map[string]int)
+
+				for _, r := range item {
+					j := hash[string(r)]
+
+					if j == 0 {
+						hash[string(r)] = 1
+					} else {
+						hash[string(r)] = j + 1
+					}
+				}
+
+				for _, r := range val {
+					j := hash[string(r)]
+
+					if j == 0 {
+						hash[string(r)] = 1
+					} else {
+						hash[string(r)] = j + 1
+					}
+				}
+
+				var isAnagram bool = true
+				for _, value := range hash {
+					if value%2 != 0 {
+						isAnagram = false
+					}
+				}
+
+				if isAnagram {
+					anagrams = append(anagrams, val)
+					if len(anagrams) >= 2 {
+						m[anagrams[0]] = anagrams[1:]
+					}
+				}
+			}
+		}
+	}
+	for val := range m {
+		sort.Strings(m[val])
+	}
+
+	return m
 }
