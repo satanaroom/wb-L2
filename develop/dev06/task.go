@@ -1,38 +1,133 @@
 package main
 
-/*
-=== Or channel ===
-
-Реализовать функцию, которая будет объединять один или более done каналов в single канал если один из его составляющих каналов закроется.
-Одним из вариантов было бы очевидно написать выражение при помощи select, которое бы реализовывало эту связь,
-однако иногда неизестно общее число done каналов, с которыми вы работаете в рантайме.
-В этом случае удобнее использовать вызов единственной функции, которая, приняв на вход один или более or каналов, реализовывала весь функционал.
-
-Определение функции:
-var or func(channels ...<- chan interface{}) <- chan interface{}
-
-Пример использования функции:
-sig := func(after time.Duration) <- chan interface{} {
-	c := make(chan interface{})
-	go func() {
-		defer close(c)
-		time.Sleep(after)
-}()
-return c
-}
-
-start := time.Now()
-<-or (
-	sig(2*time.Hour),
-	sig(5*time.Minute),
-	sig(1*time.Second),
-	sig(1*time.Hour),
-	sig(1*time.Minute),
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+	"unicode"
 )
 
-fmt.Printf(“fone after %v”, time.Since(start))
+/*
+=== Утилита cut ===
+
+Принимает STDIN, разбивает по разделителю (TAB) на колонки, выводит запрошенные
+
+Поддержать флаги:
+-f - "fields" - выбрать поля (колонки)
+-d - "delimiter" - использовать другой разделитель
+-s - "separated" - только строки с разделителем
+
+Программа должна проходить все тесты. Код должен проходить проверки go vet и golint.
 */
 
-func main() {
+const (
+	flagError = `error flag occurred: the following flags are supported:
+	-f — выбрать поля (колонки): STDIN | go run task.go -f 2
+	-d — использовать другой разделитель: STDIN | go run task.go -d ' '
+	-s — только строки с разделителем: STDIN | go run task.go -s -f 3 -d ':'`
+	fFlag = "-f"
+	dFlag = "-d"
+	sFlag = "-s"
+)
 
+func createContent(cut *Cut) {
+	var tmp []string
+	var res []string
+	var fields []int
+	for _, val := range cut.fields {
+		num, _ := strconv.Atoi(val)
+		fields = append(fields, num)
+	}
+	sc := bufio.NewScanner(os.Stdin)
+	for sc.Scan() {
+		txt := sc.Text()
+		tmp = append(tmp, txt)
+	}
+	if !cut.needChange {
+		cut.content = tmp
+	} else {
+		for _, val := range tmp {
+			if strings.Contains(val, string(cut.delimiter)) {
+				res = strings.Split(val, string(cut.delimiter))
+				canTake := len(res)
+				for _, val := range fields {
+					if val > canTake {
+						fmt.Println()
+					} else {
+						fmt.Println(res[val-1])
+					}
+				}
+			} else {
+				if !cut.onlyWithDelimiter {
+					fmt.Println(val)
+				}
+			}
+		}
+	}
+}
+
+func parseFlags(cut *Cut) bool {
+	if len(os.Args) != 1 {
+		for i := 1; i < len(os.Args); i++ {
+			runes := []rune(os.Args[i])
+			if os.Args[i] == fFlag {
+				continue
+			}
+			for _, r := range runes {
+				if unicode.IsDigit(rune(r)) {
+					if strings.Contains(os.Args[i], ",") {
+						cut.fields = strings.Split(os.Args[i], ",")
+						break
+					} else if strings.Contains(os.Args[i], "-") {
+						cut.fields = strings.Split(os.Args[i], "-")
+						break
+					} else {
+						cut.fields = append(cut.fields, os.Args[i])
+						break
+					}
+				}
+			}
+			if os.Args[i] == dFlag {
+				cut.needChange = true
+				continue
+			}
+			if os.Args[i] == sFlag {
+				cut.onlyWithDelimiter = true
+			}
+			if len(runes) == 1 && cut.needChange {
+				for _, r := range runes {
+					cut.delimiter = r
+				}
+			} else if len(runes) != 1 && cut.needChange {
+				return false
+			}
+		}
+		if len(cut.fields) == 0 || (cut.needChange && unicode.IsDigit(cut.delimiter)) {
+			return false
+		}
+	} else {
+		return false
+	}
+	return true
+}
+
+type Cut struct {
+	content           []string
+	fields            []string
+	delimiter         rune
+	needChange        bool
+	onlyWithDelimiter bool
+}
+
+func main() {
+	cut := &Cut{}
+	ok := parseFlags(cut)
+	if !ok {
+		fmt.Fprintf(os.Stderr, "%s\n", flagError)
+		os.Exit(1)
+	}
+	createContent(cut)
+	os.Exit(0)
 }
