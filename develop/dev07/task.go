@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"sync"
 	"time"
 )
 
@@ -41,33 +40,25 @@ fmt.Printf(“fone after %v”, time.Since(start))
 
 // Fan-In паттерн
 func or(channels ...<-chan interface{}) <-chan interface{} {
-	var wg sync.WaitGroup
-
 	out := make(chan interface{})
-
-	// Запускаем send goroutine
-	// для каждого входящего канала в cs.
-	// send копирует значения из c в out
-	// до тех пор пока c не закрыт, затем вызываем wg.Done.
 	send := func(c <-chan interface{}) {
-		for n := range c {
-			out <- n
+		for {
+			select {
+			case _, ok := <-c:
+				if !ok {
+					close(out)
+					return
+				}
+			case _, ok := <-out:
+				if !ok {
+					return
+				}
+			}
 		}
-		wg.Done()
 	}
-
-	wg.Add(len(channels))
 	for _, c := range channels {
 		go send(c)
 	}
-
-	// Запускаем goroutine чтобы закрыть out
-	// когда все send goroutine выполнены
-	// Это должно начаться после вызова wg.Add.
-	go func() {
-		wg.Wait()
-		close(out)
-	}()
 	return out
 }
 
@@ -83,11 +74,11 @@ func main() {
 
 	start := time.Now()
 	<-or(
+		sig(6*time.Second),
 		sig(2*time.Second),
-		sig(5*time.Second),
-		sig(1*time.Second),
 		sig(3*time.Second),
 		sig(4*time.Second),
+		sig(5*time.Second),
 	)
 
 	fmt.Printf("done after %v", time.Since(start))
