@@ -18,8 +18,8 @@ import (
 */
 
 const argumentError = `error argument occurred: utility has two options:
-	download file: go run task.go -m UrlToFile
-	download site: go run task.go Url`
+	download file: go-wget -m UrlToFile
+	download site: go-wget Url`
 
 type Wget struct {
 	Url    string

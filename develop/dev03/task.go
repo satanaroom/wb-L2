@@ -36,8 +36,8 @@ import (
 */
 
 const (
-	argumentErrorNoFlags = "error argument occurred: please, use: go run task.go fileName"
-	argumentError        = "error argument occurred: please, use: go run task.go -flag fileName"
+	argumentErrorNoFlags = "error argument occurred: please, use: go-sort fileName"
+	argumentError        = "error argument occurred: please, use: go-sort -flag fileName"
 	flagError            = "error flag occurred"
 	infoMessage          = `the following flags are supported:
 	-k — указание колонки для сортировки

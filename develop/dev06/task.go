@@ -24,9 +24,9 @@ import (
 
 const (
 	flagError = `error flag occurred: the following flags are supported:
-	-f — выбрать поля (колонки): STDIN | go run task.go -f 2
-	-d — использовать другой разделитель: STDIN | go run task.go -d ' '
-	-s — только строки с разделителем: STDIN | go run task.go -s -f 3 -d ':'`
+	-f — выбрать поля (колонки): STDIN | go-cut -f 2
+	-d — использовать другой разделитель: STDIN | go-cut -d ' '
+	-s — только строки с разделителем: STDIN | go-cut -s -f 3 -d ':'`
 	fFlag = "-f"
 	dFlag = "-d"
 	sFlag = "-s"

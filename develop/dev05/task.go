@@ -28,7 +28,7 @@ import (
 */
 
 const (
-	argumentError = "error argument occurred: please, use: go run task.go [option] template [fileName]"
+	argumentError = "error argument occurred: please, use: go-grep [option] template [fileName]"
 	flagError     = `error flag occurred: the following flags are supported:
 	-A — печатать +N строк после совпадения
 	-B — печатать +N строк до совпадения
