@@ -2,7 +2,12 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -28,6 +33,18 @@ import (
 	4. Код должен проходить проверки go vet и golint.
 */
 
+func InitRoutes() *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/create_event", CreateEvent)
+	mux.HandleFunc("/update_event", UpdateEvent)
+	mux.HandleFunc("/delete_event", DeleteEvent)
+	mux.HandleFunc("/events_for_day", EventsForDay)
+	mux.HandleFunc("/events_for_week", EventsForWeek)
+	mux.HandleFunc("/events_for_month", EventsForMonth)
+
+	return mux
+}
+
 type Server struct {
 	httpServer *http.Server
 }
@@ -44,19 +61,42 @@ func (s *Server) Run(port string, handler http.Handler) error {
 	return s.httpServer.ListenAndServe()
 }
 
+func main() {
+	srv := new(Server)
+
+	go func() {
+		log.Fatalln(srv.Run("8080", InitRoutes()))
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
+	<-quit
+}
+
 func (s *Server) Shutdown(ctx context.Context) error {
 	return s.httpServer.Shutdown(ctx)
 }
 
-func initConfig() error {
-	viper.AddConfigPath("configs")
-	viper.SetConfigName("config")
-	return viper.ReadInConfig()
+func CreateEvent(res http.ResponseWriter, req *http.Request) {
+	fmt.Println("Hello")
 }
 
-func main() {
-	logrus.SetFormatter(new(logrus.JSONFormatter))
-	if err := initConfig(); err != nil {
-		logrus.Fatalf("error config initialization: %s", err.Error())
-	}
+func UpdateEvent(res http.ResponseWriter, req *http.Request) {
+
+}
+
+func DeleteEvent(res http.ResponseWriter, req *http.Request) {
+
+}
+
+func EventsForDay(res http.ResponseWriter, req *http.Request) {
+
+}
+
+func EventsForWeek(res http.ResponseWriter, req *http.Request) {
+
+}
+
+func EventsForMonth(res http.ResponseWriter, req *http.Request) {
+
 }
