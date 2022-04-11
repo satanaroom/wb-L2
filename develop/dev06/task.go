@@ -129,5 +129,4 @@ func main() {
 		os.Exit(1)
 	}
 	createContent(cut)
-	os.Exit(0)
 }

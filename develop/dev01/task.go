@@ -37,5 +37,4 @@ func main() {
 	// Используется для более точного считывания времени.
 	time := time.Now().Add(response.ClockOffset)
 	fmt.Printf("%s", time)
-	os.Exit(0)
 }

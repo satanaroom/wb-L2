@@ -312,5 +312,4 @@ func main() {
 		os.Exit(1)
 	}
 	executeCommands(grep)
-	os.Exit(0)
 }

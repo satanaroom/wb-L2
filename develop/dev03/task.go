@@ -299,5 +299,4 @@ func main() {
 	}
 	s := []byte("hello")
 	fmt.Println(s)
-	os.Exit(0)
 }
