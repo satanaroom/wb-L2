@@ -17,7 +17,7 @@ import (
 Программа должна проходить все тесты. Код должен проходить проверки go vet и golint.
 */
 
-const argumentError = `error argument occurred: utility has two options:
+const argumentError = `error argument occurred: the utility has the following two options:
 	download file: go-wget -m UrlToFile
 	download site: go-wget Url`
 
@@ -71,15 +71,15 @@ func (w Wget) checkUrl() error {
 	return nil
 }
 
-func parseArgs(wget *Wget) bool {
+func (w *Wget)parseArgs() bool {
 	if len(os.Args) == 2 {
-		wget.Url = os.Args[1]
+		w.Url = os.Args[1]
 		return true
 	}
 	if len(os.Args) == 3 {
 		if os.Args[1] == "-m" {
-			wget.isFile = true
-			wget.Url = os.Args[2]
+			w.isFile = true
+			w.Url = os.Args[2]
 			return true
 		}
 	}
@@ -88,7 +88,7 @@ func parseArgs(wget *Wget) bool {
 
 func main() {
 	w := &Wget{}
-	ok := parseArgs(w)
+	ok := w.parseArgs()
 	if !ok {
 		fmt.Fprintf(os.Stderr, "%s\n", argumentError)
 		os.Exit(1)
@@ -109,5 +109,4 @@ func main() {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
-	os.Exit(0)
 }
