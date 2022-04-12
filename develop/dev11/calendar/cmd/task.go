@@ -2,30 +2,40 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
+
+	"github.com/joho/godotenv"
+	"github.com/satanaroom/calendar"
+	"github.com/satanaroom/calendar/pkg/handler"
+	"github.com/satanaroom/calendar/pkg/repository"
+	"github.com/satanaroom/calendar/pkg/service"
+	"github.com/spf13/viper"
+
+	_ "github.com/lib/pq"
 )
 
 /*
 === HTTP server ===
-
 Реализовать HTTP сервер для работы с календарем. В рамках задания необходимо работать строго со стандартной HTTP библиотекой.
 В рамках задания необходимо:
 	1. Реализовать вспомогательные функции для сериализации объектов доменной области в JSON.
 	2. Реализовать вспомогательные функции для парсинга и валидации параметров методов /create_event и /update_event.
 	3. Реализовать HTTP обработчики для каждого из методов API, используя вспомогательные функции и объекты доменной области.
 	4. Реализовать middleware для логирования запросов
-Методы API: POST /create_event POST /update_event POST /delete_event GET /events_for_day GET /events_for_week GET /events_for_month
+Методы API:
+POST /create_event
+POST /update_event
+POST /delete_event
+GET /events_for_day
+GET /events_for_week
+GET /events_for_month
 Параметры передаются в виде www-url-form-encoded (т.е. обычные user_id=3&date=2019-09-09).
 В GET методах параметры передаются через queryString, в POST через тело запроса.
 В результате каждого запроса должен возвращаться JSON документ содержащий либо {"result": "..."} в случае успешного выполнения метода,
 либо {"error": "..."} в случае ошибки бизнес-логики.
-
 В рамках задачи необходимо:
 	1. Реализовать все методы.
 	2. Бизнес логика НЕ должна зависеть от кода HTTP сервера.
@@ -33,70 +43,55 @@ import (
 	4. Код должен проходить проверки go vet и golint.
 */
 
-func InitRoutes() *http.ServeMux {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/create_event", CreateEvent)
-	mux.HandleFunc("/update_event", UpdateEvent)
-	mux.HandleFunc("/delete_event", DeleteEvent)
-	mux.HandleFunc("/events_for_day", EventsForDay)
-	mux.HandleFunc("/events_for_week", EventsForWeek)
-	mux.HandleFunc("/events_for_month", EventsForMonth)
-
-	return mux
-}
-
-type Server struct {
-	httpServer *http.Server
-}
-
-func (s *Server) Run(port string, handler http.Handler) error {
-	s.httpServer = &http.Server{
-		Addr:           ":" + port,
-		Handler:        handler,
-		MaxHeaderBytes: 1 << 20, //1 MB
-		ReadTimeout:    10 * time.Second,
-		WriteTimeout:   10 * time.Second,
+func main() {
+	if err := initConfig(); err != nil {
+		log.Fatalf("[cfg] error initialization configs: %s", err.Error())
 	}
 
-	return s.httpServer.ListenAndServe()
-}
+	if err := godotenv.Load(); err != nil {
+		log.Fatalf("[env] error loading env variables %s", err.Error())
+	}
 
-func main() {
-	srv := new(Server)
+	db, err := repository.NewPostgresDB(repository.Config{
+		Host:     viper.GetString("db.host"),
+		Port:     viper.GetString("db.port"),
+		Username: viper.GetString("db.username"),
+		DBName:   viper.GetString("db.dbname"),
+		SSLMode:  viper.GetString("db.sslmode"),
+		Password: os.Getenv("DB_PASSWORD"),
+	})
+	if err != nil {
+		log.Fatalf("[db] error initialization database: %s", err.Error())
+	}
+	repos := repository.NewRepository(db)
+	service := service.NewService(repos)
+	handlers := handler.NewHandler(service)
 
+	srv := new(calendar.Server)
 	go func() {
-		log.Fatalln(srv.Run("8080", InitRoutes()))
+		if err := srv.Run(viper.GetString("port"), handler.Logging(handlers.InitRouter())); err != nil {
+			log.Fatalf("[srv] error running http server: %s", err.Error())
+		}
 	}()
 
+	log.Print("App Started")
+
 	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
+	signal.Notify(quit, syscall.SIGQUIT, syscall.SIGINT)
 	<-quit
+
+	log.Print("Shutting Down")
+
+	if err := srv.Shutdown(context.Background()); err != nil {
+		log.Fatalf("[srv] error shutting down: %s", err.Error())
+	}
+	if err := db.Close(); err != nil {
+		log.Fatalf("[db] error connection close: %s", err.Error())
+	}
 }
 
-func (s *Server) Shutdown(ctx context.Context) error {
-	return s.httpServer.Shutdown(ctx)
-}
-
-func CreateEvent(res http.ResponseWriter, req *http.Request) {
-	fmt.Println("Hello")
-}
-
-func UpdateEvent(res http.ResponseWriter, req *http.Request) {
-
-}
-
-func DeleteEvent(res http.ResponseWriter, req *http.Request) {
-
-}
-
-func EventsForDay(res http.ResponseWriter, req *http.Request) {
-
-}
-
-func EventsForWeek(res http.ResponseWriter, req *http.Request) {
-
-}
-
-func EventsForMonth(res http.ResponseWriter, req *http.Request) {
-
+func initConfig() error {
+	viper.AddConfigPath("configs")
+	viper.SetConfigName("config")
+	return viper.ReadInConfig()
 }
