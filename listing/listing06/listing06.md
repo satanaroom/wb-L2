@@ -22,7 +22,7 @@ func modifySlice(i []string) {
 ```
 
 Ответ:
-```
-...
 
+```bash
+[3 2 3]
 ```

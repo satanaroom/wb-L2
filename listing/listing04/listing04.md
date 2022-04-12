@@ -18,7 +18,7 @@ func main() {
 ```
 
 Ответ:
-```
-...
 
+```bash
+fatal error: all goroutines are asleep - deadlock!
 ```

@@ -21,7 +21,8 @@ func main() {
 ```
 
 Ответ:
-```
-...
 
+```bash
+<nil>
+false
 ```
